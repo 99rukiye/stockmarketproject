@@ -26,7 +26,7 @@ public class User {
     @Column(nullable = false)
     private BigDecimal balance = BigDecimal.ZERO;
 
-    // Security bayrağı (önceden setEnabled çağırdığımız için ekliyoruz)
+
     @Column(nullable = false)
     private boolean enabled = true;
 }
