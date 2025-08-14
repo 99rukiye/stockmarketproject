@@ -48,7 +48,7 @@ public class TradeService {
                 .orElseThrow(() -> new NotFoundException("Stock not found"));
         if (!s.isActive()) throw new BadRequestException("Stock not active");
 
-        // Sistem envanteri kontrolü
+
         long qty = req.quantity();
         if (s.getAvailableQuantity() < qty) throw new BadRequestException("Not enough stock in system");
 
@@ -58,12 +58,12 @@ public class TradeService {
         BigDecimal total = two(gross.add(commission));
         if (u.getBalance().compareTo(total) < 0) throw new BadRequestException("Insufficient balance");
 
-        // Bakiyeler / komisyon / envanter
+
         u.setBalance(u.getBalance().subtract(total));
         s.setAvailableQuantity(s.getAvailableQuantity() - qty);
         systemService.addSystemIncome(commission);
 
-        // Portföy
+
         Portfolio p = ensurePortfolio(u);
         PortfolioItem item = itemRepo.findByPortfolioIdAndStockId(p.getId(), s.getId()).orElse(null);
         if (item == null) {
@@ -85,7 +85,7 @@ public class TradeService {
             item.setAvgPrice(newAvg);
         }
 
-        // Trade kaydı
+
         Trade t = new Trade();
         t.setUser(u);
         t.setStock(s);
@@ -117,16 +117,16 @@ public class TradeService {
         BigDecimal commission = two(gross.multiply(systemService.commission()));
         BigDecimal net = two(gross.subtract(commission));
 
-        // Portföy ve sistem envanteri güncelle
+
         item.setQuantity(item.getQuantity() - qty);
         if (item.getQuantity() == 0) item.setAvgPrice(BigDecimal.ZERO);
         s.setAvailableQuantity(s.getAvailableQuantity() + qty);
 
-        // Bakiyeler / komisyon
+
         u.setBalance(u.getBalance().add(net));
         systemService.addSystemIncome(commission);
 
-        // Trade kaydı
+
         Trade t = new Trade();
         t.setUser(u);
         t.setStock(s);
