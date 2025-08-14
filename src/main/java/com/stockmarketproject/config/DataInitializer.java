@@ -23,7 +23,7 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        // 1) SystemSettings tekil kayıt (ID'ye bağlı değil; ilkini oluşturuyoruz)
+
         if (settingsRepository.findAll().isEmpty()) {
             SystemSettings s = new SystemSettings();
             s.setCommissionPercent(new BigDecimal("0.05")); // %5
@@ -31,7 +31,7 @@ public class DataInitializer implements CommandLineRunner {
             settingsRepository.save(s);
         }
 
-        // 2) Admin kullanıcıyı oluştur
+
         String adminEmail = "admin@stock.local";
         if (userRepository.findByEmail(adminEmail).isEmpty()) {
             User admin = new User();
@@ -43,7 +43,7 @@ public class DataInitializer implements CommandLineRunner {
             userRepository.save(admin);
         }
 
-        // 3) Örnek hisseler
+
         if (stockRepository.count() == 0) {
             Stock s1 = new Stock();
             s1.setSymbol("ASELS");
@@ -68,7 +68,7 @@ public class DataInitializer implements CommandLineRunner {
 
             List<Stock> saved = stockRepository.saveAll(List.of(s1, s2, s3));
 
-            // 4) ilk fiyat geçmişleri
+
             Instant now = Instant.now();
             for (Stock st : saved) {
                 StockPriceHistory h = new StockPriceHistory();
