@@ -24,5 +24,5 @@ public class PortfolioItem {
     private Long quantity = 0L;
 
     @Column(nullable = false, precision = 19, scale = 2)
-    private BigDecimal avgPrice = BigDecimal.ZERO; // maliyet ortalaması
+    private BigDecimal avgPrice = BigDecimal.ZERO;
 }
