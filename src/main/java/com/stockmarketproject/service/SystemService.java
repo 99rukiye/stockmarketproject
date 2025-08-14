@@ -17,7 +17,7 @@ public class SystemService {
     private SystemSettings ensure() {
         return settingsRepo.findAll().stream().findFirst().orElseGet(() -> {
             SystemSettings s = new SystemSettings();
-            s.setCommissionPercent(new BigDecimal("0.0025")); // %0.25
+            s.setCommissionPercent(new BigDecimal("0.0025"));
             s.setSystemBalance(BigDecimal.ZERO);
             return settingsRepo.save(s);
         });
