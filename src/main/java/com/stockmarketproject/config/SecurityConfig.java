@@ -18,7 +18,7 @@ import org.springframework.security.config.annotation.authentication.configurati
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final CustomUserDetailsService uds; // @Service ile gelen tek UserDetailsService
+    private final CustomUserDetailsService uds;
 
     @Bean
     public PasswordEncoder passwordEncoder() { return new BCryptPasswordEncoder(); }
@@ -31,7 +31,7 @@ public class SecurityConfig {
         return p;
     }
 
-    // Spring'in hazır AuthenticationManager'ını kullan
+
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
