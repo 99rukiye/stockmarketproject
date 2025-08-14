@@ -34,7 +34,7 @@ public class UserService {
         u.setBalance(BigDecimal.ZERO);
         userRepo.save(u);
 
-        // Portföyü otomatik oluştur
+
         Portfolio p = new Portfolio();
         p.setUser(u);
         portfolioRepo.save(p);
@@ -50,7 +50,7 @@ public class UserService {
         u.setEnabled(true);
         u.setBalance(BigDecimal.ZERO);
         userRepo.save(u);
-        // Sadece USER için portföy aç
+
         if (u.getRole() == Role.USER) {
             Portfolio p = new Portfolio();
             p.setUser(u);
