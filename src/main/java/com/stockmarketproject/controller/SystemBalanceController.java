@@ -15,6 +15,6 @@ public class SystemBalanceController {
 
     @GetMapping("/balance")
     public ResponseEntity<SystemSettings> balance() {
-        return ResponseEntity.ok(systemService.setCommission(systemService.commission())); // sadece mevcut kaydı döndürmek için küçük hile
+        return ResponseEntity.ok(systemService.setCommission(systemService.commission()));
     }
 }
