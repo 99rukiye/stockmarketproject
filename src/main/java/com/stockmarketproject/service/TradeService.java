@@ -126,7 +126,6 @@ public class TradeService {
         u.setBalance(u.getBalance().add(net));
         systemService.addSystemIncome(commission);
 
-
         Trade t = new Trade();
         t.setUser(u);
         t.setStock(s);
