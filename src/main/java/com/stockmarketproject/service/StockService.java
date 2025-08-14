@@ -30,7 +30,7 @@ public class StockService {
         Stock s = new Stock();
         s.setSymbol(symbol.toUpperCase());
         s.setName(name);
-        s.setLastPrice(price);      // ← setPrice yerine setLastPrice
+        s.setLastPrice(price);
         s.setActive(active);
         return stockRepo.save(s);
     }
@@ -47,7 +47,7 @@ public class StockService {
     public Stock updatePrice(Long id, BigDecimal price) {
         Stock s = stockRepo.findById(id)
                 .orElseThrow(() -> new NotFoundException("Stock not found"));
-        s.setLastPrice(price);      // ← setPrice yerine setLastPrice
+        s.setLastPrice(price);
         return s;
     }
 }
