@@ -17,16 +17,16 @@ public class TopUpCard {
     private Long id;
 
     @Column(nullable = false, unique = true, length = 64)
-    private String code;                 // Tek kullanımlık kod
+    private String code;
 
     @Column(nullable = false, precision = 19, scale = 2)
-    private BigDecimal amount;          // Yüklenecek tutar
+    private BigDecimal amount;
 
     @Column(nullable = false)
-    private boolean used = false;       // Kullanıldı mı?
+    private boolean used = false;
 
-    // Audit alanları (opsiyonel ama faydalı)
-    private Long createdByUserId;       // Kodu oluşturan admin
-    private Long usedByUserId;          // Kodu kullanan user
-    private Instant usedAt;             // Kullanım zamanı
+
+    private Long createdByUserId;
+    private Long usedByUserId;
+    private Instant usedAt;
 }
