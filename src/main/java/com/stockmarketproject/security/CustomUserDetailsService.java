@@ -1,7 +1,7 @@
 package com.stockmarketproject.security;
 
 import com.stockmarketproject.entity.User;
-import com.stockmarketproject.entity.Role; // <-- enum Role { ADMIN, USER }
+import com.stockmarketproject.entity.Role;
 import com.stockmarketproject.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -21,11 +21,11 @@ public class CustomUserDetailsService implements UserDetailsService {
         com.stockmarketproject.entity.User u = userRepo.findByEmail(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 
-        // User entity’de role alanı enum Role ise:
-        Role role = u.getRole();                // null ise default USER verelim
+
+        Role role = u.getRole();
         String roleName = (role != null) ? role.name() : "USER";
 
-        // User entity’de enabled alanı yoksa, tüm bayrakları true yap
+
         boolean enabled = true;
         boolean accountNonExpired = true;
         boolean credentialsNonExpired = true;
