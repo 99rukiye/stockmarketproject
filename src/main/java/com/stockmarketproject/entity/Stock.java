@@ -24,11 +24,11 @@ public class Stock {
     @Column(nullable = false)
     private boolean active = true;
 
-    // Sistem envanterindeki hisse adedi (opsiyonel)
+
     @Column(nullable = false)
     private Long availableQuantity = 0L;
 
-    // Son işlem/güncelleme fiyatı
+
     @Column(nullable = false, precision = 19, scale = 2)
-    private BigDecimal lastPrice = BigDecimal.ONE; // 1.00 default
+    private BigDecimal lastPrice = BigDecimal.ONE;
 }
