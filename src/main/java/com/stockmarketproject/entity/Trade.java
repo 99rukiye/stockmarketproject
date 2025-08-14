@@ -22,19 +22,19 @@ public class Trade {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private TradeType type;               // BUY / SELL
+    private TradeType type;
 
     @Column(nullable = false)
     private Long quantity;
 
     @Column(nullable = false, precision = 19, scale = 2)
-    private BigDecimal pricePerShare;     // işlem anındaki birim fiyat
+    private BigDecimal pricePerShare;
 
     @Column(nullable = false, precision = 19, scale = 2)
-    private BigDecimal commission;        // kesilen komisyon
+    private BigDecimal commission;
 
     @Column(nullable = false, precision = 19, scale = 2)
-    private BigDecimal totalCost;         // BUY: ödenen toplam; SELL: elde edilen net
+    private BigDecimal totalCost;
 
     @Column(nullable = false)
     private Instant timestamp;
