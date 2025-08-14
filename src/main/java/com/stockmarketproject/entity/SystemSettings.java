@@ -12,7 +12,7 @@ public class SystemSettings {
     private Long id = 1L; // singleton
 
     @Column(nullable = false, precision = 19, scale = 2)
-    private BigDecimal commissionPercent; // e.g. 0.05 -> 5%
+    private BigDecimal commissionPercent;
 
     @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal systemBalance = BigDecimal.ZERO;
