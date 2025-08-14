@@ -22,7 +22,7 @@ public class PriceUpdater {
     private final StockRepository stockRepo;
     private final StockPriceHistoryRepository historyRepo;
 
-    // Her 60 saniyede bir çalışır
+
     @Scheduled(fixedRate = 60_000)
     @Transactional
     public void updateAllPrices() {
@@ -30,13 +30,13 @@ public class PriceUpdater {
         for (Stock s : all) {
             if (!s.isActive()) continue;
 
-            // Stock'taki alan: lastPrice
+
             BigDecimal oldPrice = s.getLastPrice();
             if (oldPrice == null || oldPrice.compareTo(BigDecimal.ZERO) <= 0) {
                 oldPrice = new BigDecimal("1.00");
             }
 
-            // -0.02 ile +0.02 arasında rastgele oran
+
             double delta = ThreadLocalRandom.current().nextDouble(-0.02, 0.02);
             BigDecimal factor = BigDecimal.valueOf(1.0 + delta);
 
@@ -45,10 +45,10 @@ public class PriceUpdater {
                 newPrice = new BigDecimal("1.00");
             }
 
-            // Stok üzerinde güncelle (lastPrice)
+
             s.setLastPrice(newPrice);
 
-            // Geçmişe kaydet
+
             StockPriceHistory h = new StockPriceHistory();
             h.setStock(s);
             h.setPrice(newPrice);
