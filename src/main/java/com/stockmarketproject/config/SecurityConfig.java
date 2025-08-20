@@ -1,6 +1,7 @@
 package com.stockmarketproject.config;
 
 import com.stockmarketproject.security.CustomUserDetailsService;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -34,24 +35,33 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.csrf(csrf -> csrf
-                .ignoringRequestMatchers("/h2-console/**", "/api/auth/register")
-        );
-        http.headers(h -> h.frameOptions(f -> f.disable())); // H2 console için
+        http
 
-        http.authenticationProvider(authenticationProvider());
+                .csrf(csrf -> csrf.disable())
+                .headers(h -> h.frameOptions(f -> f.sameOrigin()))
+                .authenticationProvider(authenticationProvider())
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                "/", "/login", "/register",
+                                "/css/**", "/js/**", "/images/**", "/favicon.ico",
+                                "/webjars/**", "/h2-console/**",
+                                "/api/auth/register"
+                        ).permitAll()
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .anyRequest().authenticated()
+                )
 
-        http.authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/login", "/register", "/stocks",
-                        "/css/**", "/js/**", "/images/**", "/favicon.ico",
-                        "/webjars/**", "/h2-console/**").permitAll()
+                .exceptionHandling(ex -> ex.authenticationEntryPoint((req, res, ex0) -> {
+                    if ("XMLHttpRequest".equals(req.getHeader("X-Requested-With"))) {
+                        res.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+                    } else {
+                        res.setHeader("WWW-Authenticate", "Basic realm=\"stock\"");
+                        res.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+                    }
+                }))
 
-                .requestMatchers("/api/auth/register").permitAll()
-                .anyRequest().authenticated()
-        );
-
-        http.httpBasic(Customizer.withDefaults());
-        http.logout(l -> l.logoutUrl("/logout").logoutSuccessUrl("/login"));
+                .httpBasic(Customizer.withDefaults())
+                .logout(l -> l.logoutUrl("/logout").logoutSuccessUrl("/login"));
 
         return http.build();
     }
