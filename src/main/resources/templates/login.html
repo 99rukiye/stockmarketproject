@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sign in • Stock App</title>
+    <style>
+        :root {
+            --bg: #0b0d14;
+            --panel: #111521;
+            --text: #e7eaf3;
+            --muted: #9aa3b2;
+            --primary: #0ea5e9;
+            --primary-2: #0369a1;
+            --danger: #ef4444;
+            --radius: 14px;
+        }
+        * { box-sizing: border-box; }
+        html, body {
+            height: 100%;
+            margin: 0;
+            background: radial-gradient(1200px 800px at 80% -10%, #111a2d, #0b0d14);
+            color: var(--text);
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+        }
+        .wrap {
+            min-height: 100%;
+            display: grid;
+            place-items: center;
+            padding: 32px 16px;
+        }
+        .card {
+            width: 100%;
+            max-width: 560px;
+            background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+            border: 1px solid rgba(255,255,255,.08);
+            backdrop-filter: blur(8px);
+            border-radius: var(--radius);
+            padding: 28px;
+            box-shadow:
+                    0 30px 60px rgba(0,0,0,.45),
+                    inset 0 0 0 1px rgba(255,255,255,.03);
+            animation: pop .25s ease-out;
+        }
+        @keyframes pop { from { transform: scale(.98); opacity:.7 } }
+        h1 {
+            margin: 0 0 18px;
+            font-size: 28px;
+            letter-spacing: .2px;
+        }
+        label {
+            display: block;
+            font-size: 13px;
+            color: var(--muted);
+            margin: 16px 0 8px;
+        }
+        input {
+            width: 100%;
+            padding: 14px 14px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,.12);
+            background: #0f1422;
+            color: var(--text);
+            outline: none;
+            transition: border .12s ease, box-shadow .12s ease;
+        }
+        input:focus {
+            border-color: rgba(14,165,233,.8);
+            box-shadow: 0 0 0 3px rgba(14,165,233,.18);
+        }
+        .row {
+            display: flex; gap: 12px; margin-top: 18px;
+        }
+        .btn {
+            appearance: none;
+            border: 0;
+            padding: 12px 18px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform .05s ease, filter .12s ease, box-shadow .12s ease, background .12s ease;
+            box-shadow: 0 10px 24px rgba(14,165,233,.18);
+            color: white;
+            background: linear-gradient(180deg, var(--primary), var(--primary-2));
+        }
+        .btn:active { transform: translateY(1px); filter: brightness(.98); }
+        .btn.secondary {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,.18);
+            color: var(--text);
+            box-shadow: none;
+        }
+        .muted { color: var(--muted); font-size: 13px; margin-top: 14px; }
+        .error { color: var(--danger); font-weight: 600; margin-top: 10px; min-height: 20px; }
+        .top {
+            display: flex; align-items: center; justify-content: space-between; gap: 8px;
+        }
+        .brand { font-weight: 800; letter-spacing: .3px; color: #cde9ff; }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <section class="card">
+        <div class="top">
+            <h1>Sign in</h1>
+            <div class="brand">Stock App</div>
+        </div>
+
+        <label for="email">Email</label>
+        <input id="email" type="email" placeholder="you@example.com" autocomplete="username" />
+
+        <label for="password">Password</label>
+        <input id="password" type="password" placeholder="••••••••" autocomplete="current-password" />
+
+        <div class="row">
+            <button id="btnLogin" class="btn">Login</button>
+            <button id="btnRegister" class="btn secondary" type="button">Go to Register</button>
+        </div>
+
+        <div id="msg" class="error"></div>
+        <div class="muted">Your credentials are sent using <strong>HTTP Basic</strong> only to this server.</div>
+    </section>
+</div>
+
+<script>
+    const emailEl = document.getElementById('email');
+    const passEl  = document.getElementById('password');
+    const msgEl   = document.getElementById('msg');
+    const btnLogin = document.getElementById('btnLogin');
+    const btnRegister = document.getElementById('btnRegister');
+
+    const b64 = (s) => btoa(unescape(encodeURIComponent(s)));
+    const authHeader = (e,p) => 'Basic ' + b64(`${e}:${p}`);
+
+    (function prefill(){
+        const last = localStorage.getItem('sm_email');
+        if (last) emailEl.value = last;
+        // Enter ile login
+        [emailEl, passEl].forEach(el => el.addEventListener('keydown', e => {
+            if (e.key === 'Enter') doLogin();
+        }));
+    })();
+
+    btnRegister.addEventListener('click', () => {
+        window.location.href = '/register';
+    });
+
+    btnLogin.addEventListener('click', doLogin);
+
+    async function doLogin() {
+        msgEl.textContent = '';
+        const email = (emailEl.value || '').trim();
+        const pass  = passEl.value || '';
+
+        if (!email || !pass) {
+            msgEl.textContent = 'Please enter email and password.';
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/auth/me', {
+                method: 'GET',
+                headers: { 'Authorization': authHeader(email, pass) },
+                cache: 'no-store'
+            });
+
+            if (res.ok) {
+                localStorage.setItem('sm_auth', authHeader(email, pass).replace('Basic ',''));
+                localStorage.setItem('sm_email', email);
+                window.location.replace('/app');
+            } else if (res.status === 401) {
+                msgEl.textContent = 'Login failed: invalid credentials.';
+            } else {
+                msgEl.textContent = `Login failed: ${res.status} ${res.statusText}`;
+            }
+        } catch (err) {
+            msgEl.textContent = 'Network error: ' + (err?.message || err);
+        }
+    }
+</script>
+</body>
+</html>
