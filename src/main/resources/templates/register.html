@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="tr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Register</title>
+    <style>
+        :root{--b:#111827;--g:#6b7280;--bd:#e5e7eb;--bg:#f9fafb;}
+        *{box-sizing:border-box}
+        body{font-family:system-ui,Arial,sans-serif;background:var(--bg);margin:24px}
+        .card{max-width:460px;margin:auto;background:#fff;border:1px solid var(--bd);border-radius:12px;padding:20px}
+        h2{margin:0 0 14px 0}
+        label{display:block;font-size:12px;color:var(--g);margin:10px 0 4px}
+        input{width:100%;padding:12px;border:1px solid var(--bd);border-radius:10px;outline:none}
+        input:focus{border-color:#0ea5e9;box-shadow:0 0 0 3px rgba(14,165,233,.12)}
+        .row{display:flex;gap:10px;margin-top:16px}
+        button,.btn{padding:10px 14px;border:1px solid var(--bd);border-radius:10px;background:var(--b);color:#fff;cursor:pointer}
+        .btn.link{background:#fff;color:var(--b);text-decoration:none}
+        .muted{color:var(--g);font-size:12px;margin-top:8px}
+        .ok{color:#065f46;margin-top:10px}
+        .err{color:#b91c1c;margin-top:10px;white-space:pre-wrap}
+        .right{float:right;font-size:12px}
+    </style>
+</head>
+<body>
+<div class="card">
+    <h2>Hesap oluştur</h2>
+
+    <label for="email">Email</label>
+    <input id="email" type="email" placeholder="user@mail.com" autocomplete="email" />
+
+    <label for="password">Şifre (en az 6 karakter)
+        <span class="right"><input id="toggle" type="checkbox" /> Göster</span>
+    </label>
+    <input id="password" type="password" minlength="6" autocomplete="new-password" />
+
+    <div class="row">
+        <button id="btn" type="button">Register</button>
+        <a class="btn link" href="/login">Back to Login</a>
+    </div>
+
+    <div id="msg" class="ok"></div>
+    <div id="err" class="err"></div>
+
+    <div class="muted">Kayıt başarılı olursa otomatik giriş yapıp /app sayfasına yönlendireceğiz.</div>
+</div>
+
+<script>
+    const emailEl = document.getElementById('email');
+    const passEl  = document.getElementById('password');
+    const btn     = document.getElementById('btn');
+    const msgEl   = document.getElementById('msg');
+    const errEl   = document.getElementById('err');
+
+    document.getElementById('toggle').addEventListener('change', (e) => {
+        passEl.type = e.target.checked ? 'text' : 'password';
+    });
+
+    [emailEl, passEl].forEach(el => el.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Enter') register();
+    }));
+
+    btn.addEventListener('click', register);
+
+    async function register(){
+        msgEl.textContent = '';
+        errEl.textContent = '';
+
+        const email = (emailEl.value || '').trim();
+        const password = passEl.value || '';
+
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            errEl.textContent = 'Geçerli bir e-posta adresi giriniz.';
+            emailEl.focus();
+            return;
+        }
+        if (!password || password.length < 6) {
+            errEl.textContent = 'Şifre en az 6 karakter olmalıdır.';
+            passEl.focus();
+            return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'Gönderiliyor…';
+
+        try {
+            const res = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+
+            if (res.ok) {
+                localStorage.setItem('sm_email', email);
+                localStorage.setItem('sm_auth', btoa(email + ':' + password));
+                msgEl.textContent = 'Kayıt başarılı, yönlendiriliyor…';
+                window.location.replace('/app');
+                return;
+            }
+
+
+            const ct = res.headers.get('content-type') || '';
+            let detail = '';
+            if (ct.includes('application/json')) {
+                const j = await res.json().catch(()=>null);
+                detail = j ? (j.message || JSON.stringify(j)) : `HTTP ${res.status}`;
+            } else {
+                detail = await res.text().catch(()=>`HTTP ${res.status}`);
+            }
+            errEl.textContent = `Kayıt başarısız: ${detail}`;
+        } catch (e) {
+            errEl.textContent = 'Ağ hatası: ' + (e?.message || e);
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Register';
+        }
+    }
+</script>
+</body>
+</html>
