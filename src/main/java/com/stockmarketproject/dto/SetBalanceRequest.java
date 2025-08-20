@@ -1,6 +1,6 @@
 package com.stockmarketproject.dto;
 
-import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 
-public record SetBalanceRequest(@DecimalMin("0.00") BigDecimal amount) {}
+public record SetBalanceRequest(@NotNull BigDecimal balance) {}
