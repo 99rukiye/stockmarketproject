@@ -4,56 +4,57 @@ import com.stockmarketproject.entity.Stock;
 import com.stockmarketproject.entity.StockPriceHistory;
 import com.stockmarketproject.repository.StockPriceHistoryRepository;
 import com.stockmarketproject.repository.StockRepository;
+import com.stockmarketproject.scrape.ScrapedStock;
 import lombok.RequiredArgsConstructor;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.Map;
+import java.util.stream.Collectors;
 
-@Component
+@Service
 @RequiredArgsConstructor
+@Slf4j
 public class PriceUpdater {
 
     private final StockRepository stockRepo;
     private final StockPriceHistoryRepository historyRepo;
 
-
-    @Scheduled(fixedRate = 60_000)
     @Transactional
-    public void updateAllPrices() {
-        List<Stock> all = stockRepo.findAll();
-        for (Stock s : all) {
-            if (!s.isActive()) continue;
+    public int apply(List<ScrapedStock> scraped) {
+        if (scraped == null || scraped.isEmpty()) return 0;
 
+        Map<String, ScrapedStock> map =
+                scraped.stream().collect(Collectors.toMap(ScrapedStock::symbol, s -> s, (a, b) -> a));
 
-            BigDecimal oldPrice = s.getLastPrice();
-            if (oldPrice == null || oldPrice.compareTo(BigDecimal.ZERO) <= 0) {
-                oldPrice = new BigDecimal("1.00");
+        List<Stock> stocks = stockRepo.findAll();
+        int updated = 0;
+        Instant now = Instant.now();
+
+        for (Stock st : stocks) {
+            ScrapedStock s = map.get(st.getSymbol());
+            if (s == null || s.price() == null) continue;
+
+            BigDecimal newPrice = s.price().setScale(2, RoundingMode.HALF_UP);
+            if (st.getLastPrice() == null || st.getLastPrice().compareTo(newPrice) != 0) {
+                st.setLastPrice(newPrice);
+                stockRepo.save(st);
+
+                StockPriceHistory h = new StockPriceHistory();
+                h.setStock(st);
+                h.setPrice(newPrice);
+                h.setTimestamp(now);
+                historyRepo.save(h);
+
+                updated++;
             }
-
-
-            double delta = ThreadLocalRandom.current().nextDouble(-0.02, 0.02);
-            BigDecimal factor = BigDecimal.valueOf(1.0 + delta);
-
-            BigDecimal newPrice = oldPrice.multiply(factor).setScale(2, RoundingMode.HALF_UP);
-            if (newPrice.compareTo(new BigDecimal("1.00")) < 0) {
-                newPrice = new BigDecimal("1.00");
-            }
-
-
-            s.setLastPrice(newPrice);
-
-
-            StockPriceHistory h = new StockPriceHistory();
-            h.setStock(s);
-            h.setPrice(newPrice);
-            h.setTimestamp(Instant.now());
-            historyRepo.save(h);
         }
+        log.info("PriceUpdater: {} stock updated.", updated);
+        return updated;
     }
 }
