@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Stock App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <style>
+        :root{
+            --b:#111827; --g:#6b7280; --bd:#e5e7eb; --bg:#f9fafb; --ink:#111827;
+            --pri:#0ea5e9; --pri-ink:#fff;
+        }
+        *{box-sizing:border-box}
+        body{
+            margin:0; font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",
+        Roboto,"Helvetica Neue",Arial,"Noto Sans","Apple Color Emoji",
+        "Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";
+            color:var(--ink); background:#fff;
+        }
+        .container{max-width:1200px; margin:32px auto; padding:0 16px}
+        header{display:flex; justify-content:space-between; align-items:center; margin-bottom:24px}
+        h1{font-size:36px; margin:0}
+        .muted{color:var(--g)}
+        .btn{
+            display:inline-block; background:var(--b); color:#fff; border-radius:10px;
+            padding:10px 14px; border:none; cursor:pointer; font-weight:600; text-decoration:none
+        }
+        .btn.outline{background:#fff; color:var(--b); border:1px solid var(--bd)}
+        .btn.small{padding:6px 10px; border-radius:8px; font-size:14px}
+        .row{display:flex; gap:24px; flex-wrap:wrap}
+        .col{flex:1 1 340px}
+        .card{border:1px solid var(--bd); border-radius:16px; padding:18px; background:#fff}
+        .card h3{margin:0 0 12px 0; font-size:22px}
+        .field{display:flex; flex-direction:column; gap:6px; margin-bottom:12px}
+        .field label{font-size:14px; color:var(--g)}
+        .input, select{
+            width:100%; padding:12px 14px; border-radius:12px; border:1px solid var(--bd);
+            background:#fff; outline:none;
+        }
+        .input:focus, select:focus{border-color:var(--pri); box-shadow:0 0 0 3px rgba(14,165,233,.1)}
+
+        table{width:100%; border-collapse:collapse}
+        th,td{padding:14px; border-bottom:1px solid var(--bd); text-align:left; vertical-align:middle}
+        thead th{background:var(--bg); font-size:14px; color:var(--g)}
+        .toolbar{display:flex; justify-content:space-between; align-items:center; margin:12px 0}
+        .pill{display:inline-flex; align-items:center; gap:8px; background:var(--bg); border:1px solid var(--bd); color:var(--b); padding:8px 12px; border-radius:999px}
+        .subtle{opacity:.75}
+        ul.reset{list-style:none; margin:0; padding:0}
+        .right{text-align:right}
+    </style>
+</head>
+
+<body>
+<div class="container">
+    <header>
+        <div>
+            <h1>Stock App</h1>
+            <div class="muted">Login sonrası Basic Auth ile API çağrıları.</div>
+            <div class="muted" style="margin-top:6px">User: <strong id="userEmail">-</strong></div>
+        </div>
+        <div>
+            <button id="btnLogout" class="btn outline">Logout</button>
+        </div>
+    </header>
+
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <h3>Balance</h3>
+                <div class="toolbar">
+                    <button id="btnMyBalance" class="btn small">My Balance</button>
+                    <div class="pill"><span>₺</span><strong id="balanceVal">0.00</strong></div>
+                </div>
+                <div class="field">
+                    <label for="topupCode">Top-up Code</label>
+                    <input id="topupCode" class="input" placeholder="KOD-ABC-001" value="KOD-ABC-001">
+                </div>
+                <button id="btnUseCode" class="btn small">Use Code</button>
+            </div>
+        </div>
+
+        <div class="col">
+            <div class="card">
+                <h3>Trading</h3>
+                <div class="field">
+                    <label for="tradeSymbol">Symbol</label>
+                    <input id="tradeSymbol" class="input" value="ASELS" placeholder="ASELS">
+                </div>
+                <div class="field">
+                    <label for="tradeQty">Quantity</label>
+                    <input id="tradeQty" class="input" type="number" value="1" min="1" step="1">
+                </div>
+                <div style="display:flex; gap:8px">
+                    <button id="btnBuy" class="btn small">Buy</button>
+                    <button id="btnSell" class="btn small">Sell</button>
+                </div>
+                <div class="muted" style="margin-top:10px">Last trade: <span id="lastTrade">-</span></div>
+            </div>
+        </div>
+
+        <div class="col">
+            <div class="card">
+                <h3>Tools</h3>
+                <a class="btn small" href="/h2-console" target="_blank">H2 Console</a>
+
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:14px">
+                    <h4 style="margin:0">DB Stocks <span id="stockCount" class="subtle">(0)</span></h4>
+                    <button id="btnMiniMore" class="btn small">More</button>
+                </div>
+
+                <ul id="dbSnapshot" class="reset" style="margin-top:8px; max-height:220px; overflow:auto"></ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top:22px">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin:6px 0 12px">
+            <h3 style="margin:0">Stocks</h3>
+            <button id="btnReload" class="btn small">Reload</button>
+        </div>
+
+        <table id="stocksTable">
+            <thead>
+            <tr>
+                <th>Symbol</th>
+                <th>Name</th>
+                <th class="right">Last Price</th>
+                <th class="right">Available</th>
+                <th>Status</th>
+            </tr>
+            </thead>
+            <tbody id="stocksBody"></tbody>
+        </table>
+    </div>
+
+    <div class="row" style="margin-top:22px">
+        <div class="col">
+            <div class="card">
+                <h3>My Portfolio</h3>
+                <table>
+                    <thead><tr><th>Symbol</th><th class="right">Qty</th><th class="right">Avg Price</th></tr></thead>
+                    <tbody id="portfolioBody"><tr><td colspan="3" class="muted">Empty</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="col">
+            <div class="card">
+                <h3>My Trades</h3>
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Time</th><th>Type</th><th>Symbol</th>
+                        <th class="right">Qty</th><th class="right">Price</th><th class="right">Commission</th>
+                    </tr>
+                    </thead>
+                    <tbody id="tradesBody"><tr><td colspan="6" class="muted">No trades</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const LS_KEY   = 'sm_auth';
+    const LS_EMAIL = 'sm_email';
+
+    const userEmailEl = document.getElementById('userEmail');
+    userEmailEl.textContent = localStorage.getItem(LS_EMAIL) || '-';
+
+    function authHeader() {
+        const token = localStorage.getItem(LS_KEY);
+        if (!token) {
+            window.location.replace('/login');
+            throw new Error('No auth in localStorage');
+        }
+        return 'Basic ' + token;
+    }
+
+    async function http(path, { method = 'GET', body = null } = {}) {
+        const opts = {
+            method,
+            headers: {
+                'Authorization': authHeader(),
+                'Accept': 'application/json'
+            }
+        };
+        if (body != null) {
+            opts.headers['Content-Type'] = 'application/json';
+            opts.body = JSON.stringify(body);
+        }
+
+        const res = await fetch(path, opts);
+
+        if (res.status === 401 || res.status === 403) {
+            localStorage.removeItem(LS_KEY);
+            localStorage.removeItem(LS_EMAIL);
+            window.location.replace('/login');
+            return Promise.reject(new Error(res.status));
+        }
+
+        if (!res.ok) {
+            const text = await res.text().catch(()=>res.statusText);
+            throw new Error(`HTTP ${res.status}: ${text}`);
+        }
+
+        if (res.status === 204) return null;
+
+        return res.json();
+    }
+
+    const fmt2 = v => Number(v ?? 0).toFixed(2);
+
+    document.getElementById('btnLogout').addEventListener('click', () => {
+        localStorage.removeItem(LS_KEY);
+        localStorage.removeItem(LS_EMAIL);
+        window.location.replace('/login');
+    });
+
+    async function loadMyBalance() {
+        try {
+            const data = await http('/api/balance/me');
+            const val = (data && typeof data === 'object' && 'balance' in data) ? data.balance : data;
+            document.getElementById('balanceVal').textContent = fmt2(val);
+        } catch (e) {
+            console.error(e);
+            alert('Balance load failed');
+        }
+    }
+    document.getElementById('btnMyBalance').addEventListener('click', loadMyBalance);
+
+    async function useTopupCode() {
+        const code = document.getElementById('topupCode').value.trim();
+        if (!code) return alert('Enter top-up code');
+        try {
+            await http('/api/balance/topup', { method: 'POST', body: { code } });
+            await loadMyBalance();
+            alert('Balance updated');
+        } catch (e) {
+            console.error(e);
+            alert('Top-up failed');
+        }
+    }
+    document.getElementById('btnUseCode').addEventListener('click', useTopupCode);
+
+    async function loadStocks() {
+        try {
+            const data = await http('/api/stocks');
+
+            const rows = data.map(s => `
+        <tr>
+          <td>${s.symbol}</td>
+          <td>${s.name ?? ''}</td>
+          <td class="right">${fmt2(s.lastPrice)}</td>
+          <td class="right">${s.availableQuantity}</td>
+          <td>${s.active ? 'ACTIVE' : 'PASSIVE'}</td>
+        </tr>
+      `).join('');
+            document.getElementById('stocksBody').innerHTML = rows;
+
+            document.getElementById('stockCount').textContent = `(${data.length})`;
+            const mini = data.slice(0, 10).map(s => `
+        <li style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bd)">
+          <span><strong>${s.symbol}</strong> <span class="subtle">${s.name ?? ''}</span></span>
+          <span>${fmt2(s.lastPrice)}</span>
+        </li>
+      `).join('');
+            document.getElementById('dbSnapshot').innerHTML = mini;
+
+        } catch (e) {
+            console.error(e);
+            alert('Stocks cannot be loaded.');
+        }
+    }
+    document.getElementById('btnReload').addEventListener('click', loadStocks);
+    document.getElementById('btnMiniMore').addEventListener('click', () => {
+        const table = document.getElementById('stocksTable');
+        table.scrollIntoView({ behavior: 'smooth' });
+    });
+
+    async function trade(type) {
+        const symbol = document.getElementById('tradeSymbol').value.trim();
+        const quantity = parseInt(document.getElementById('tradeQty').value, 10) || 1;
+        if (!symbol) return alert('Enter symbol');
+
+        try {
+            const tx = await http(`/api/trade/${type}`, { method: 'POST', body: { symbol, quantity } });
+            document.getElementById('lastTrade').textContent =
+                `${(tx.type || type).toUpperCase()} ${tx.symbol || symbol} x${tx.quantity || quantity} @ ${fmt2(tx.price || tx.lastPrice || 0)}`;
+            await loadMyBalance();
+            await loadStocks();
+        } catch (e) {
+            console.error(e);
+            alert('Trade failed');
+        }
+    }
+    document.getElementById('btnBuy').addEventListener('click', () => trade('buy'));
+    document.getElementById('btnSell').addEventListener('click', () => trade('sell'));
+
+    window.addEventListener('load', async () => {
+        try {
+            await loadStocks();
+            await loadMyBalance();
+        } catch (_) {}
+    });
+</script>
+</body>
+</html>
