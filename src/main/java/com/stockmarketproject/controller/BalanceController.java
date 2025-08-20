@@ -1,4 +1,3 @@
-// src/main/java/com/stockmarketproject/controller/BalanceController.java
 package com.stockmarketproject.controller;
 
 import com.stockmarketproject.dto.TopUpRequest;
@@ -34,10 +33,8 @@ public class BalanceController {
 
         User me = userService.getByEmail(email);
 
-        // Top-up kodunu kullan (void döner)
         topUpCardService.useCode(req.code(), me.getId());
 
-        // Güncellenen bakiyeyi tekrar oku
         User updated = userService.getByEmail(email);
         return Map.of("balance", updated.getBalance());
     }
