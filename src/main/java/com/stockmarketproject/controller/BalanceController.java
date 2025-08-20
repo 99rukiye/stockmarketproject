@@ -1,15 +1,15 @@
+// src/main/java/com/stockmarketproject/controller/BalanceController.java
 package com.stockmarketproject.controller;
 
 import com.stockmarketproject.dto.TopUpRequest;
 import com.stockmarketproject.entity.User;
 import com.stockmarketproject.service.TopUpCardService;
 import com.stockmarketproject.service.UserService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.Map;
 
 @RestController
@@ -17,19 +17,28 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class BalanceController {
 
-    private final TopUpCardService topUpCardService;
     private final UserService userService;
+    private final TopUpCardService topUpCardService;
 
     @GetMapping("/me")
-    public ResponseEntity<Map<String, Object>> myBalance(Authentication auth) {
-        User u = userService.getByEmail(auth.getName());
-        return ResponseEntity.ok(Map.of("email", u.getEmail(), "balance", u.getBalance()));
+    public Map<String, BigDecimal> myBalance(
+            @AuthenticationPrincipal(expression = "name") String email) {
+        User u = userService.getByEmail(email);
+        return Map.of("balance", u.getBalance());
     }
 
     @PostMapping("/topup")
-    public ResponseEntity<?> useTopUp(@Valid @RequestBody TopUpRequest req, Authentication auth) {
-        Long userId = userService.getByEmail(auth.getName()).getId();
-        topUpCardService.useCode(req.code(), userId);
-        return ResponseEntity.ok(Map.of("message", "balance_updated"));
+    public Map<String, BigDecimal> topup(
+            @RequestBody TopUpRequest req,
+            @AuthenticationPrincipal(expression = "name") String email) {
+
+        User me = userService.getByEmail(email);
+
+        // Top-up kodunu kullan (void döner)
+        topUpCardService.useCode(req.code(), me.getId());
+
+        // Güncellenen bakiyeyi tekrar oku
+        User updated = userService.getByEmail(email);
+        return Map.of("balance", updated.getBalance());
     }
 }
