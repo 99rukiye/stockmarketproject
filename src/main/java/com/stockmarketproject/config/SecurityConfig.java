@@ -42,13 +42,11 @@ public class SecurityConfig {
         http.authenticationProvider(authenticationProvider());
 
         http.authorizeHttpRequests(auth -> auth
-                // thymeleaf sayfaları + statikler serbest
                 .requestMatchers("/", "/login", "/register", "/stocks",
                         "/css/**", "/js/**", "/images/**", "/favicon.ico",
                         "/webjars/**", "/h2-console/**").permitAll()
-                // Kayıt endpoint'i serbest olmalı
+
                 .requestMatchers("/api/auth/register").permitAll()
-                // Diğer her şey Basic Auth ile
                 .anyRequest().authenticated()
         );
 
