@@ -1,30 +1,21 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="tr">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
     <title>Stock App</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>
         :root{
             --b:#111827; --g:#6b7280; --bd:#e5e7eb; --bg:#f9fafb; --ink:#111827;
-            --pri:#0ea5e9; --pri-ink:#fff;
+            --pri:#0ea5e9; --pri-ink:#fff; --ok:#065f46; --err:#b91c1c;
         }
         *{box-sizing:border-box}
-        body{
-            margin:0; font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",
-        Roboto,"Helvetica Neue",Arial,"Noto Sans","Apple Color Emoji",
-        "Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";
-            color:var(--ink); background:#fff;
-        }
+        body{margin:0; font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial; color:var(--ink); background:#fff}
         .container{max-width:1200px; margin:32px auto; padding:0 16px}
-        header{display:flex; justify-content:space-between; align-items:center; margin-bottom:24px}
+        header{display:flex; justify-content:space-between; align-items:center; margin-bottom:16px}
         h1{font-size:36px; margin:0}
         .muted{color:var(--g)}
-        .btn{
-            display:inline-block; background:var(--b); color:#fff; border-radius:10px;
-            padding:10px 14px; border:none; cursor:pointer; font-weight:600; text-decoration:none
-        }
+        .btn{display:inline-block; background:var(--b); color:#fff; border-radius:10px; padding:10px 14px; border:none; cursor:pointer; font-weight:600; text-decoration:none}
         .btn.outline{background:#fff; color:var(--b); border:1px solid var(--bd)}
         .btn.small{padding:6px 10px; border-radius:8px; font-size:14px}
         .row{display:flex; gap:24px; flex-wrap:wrap}
@@ -32,24 +23,23 @@
         .card{border:1px solid var(--bd); border-radius:16px; padding:18px; background:#fff}
         .card h3{margin:0 0 12px 0; font-size:22px}
         .field{display:flex; flex-direction:column; gap:6px; margin-bottom:12px}
-        .field label{font-size:14px; color:var(--g)}
+        .field label{font-size:13px; color:var(--g)}
         .input, select{
-            width:100%; padding:12px 14px; border-radius:12px; border:1px solid var(--bd);
-            background:#fff; outline:none;
+            width:100%; padding:12px 14px; border-radius:12px; border:1px solid var(--bd); background:#fff; outline:none;
         }
         .input:focus, select:focus{border-color:var(--pri); box-shadow:0 0 0 3px rgba(14,165,233,.1)}
-
         table{width:100%; border-collapse:collapse}
         th,td{padding:14px; border-bottom:1px solid var(--bd); text-align:left; vertical-align:middle}
         thead th{background:var(--bg); font-size:14px; color:var(--g)}
         .toolbar{display:flex; justify-content:space-between; align-items:center; margin:12px 0}
         .pill{display:inline-flex; align-items:center; gap:8px; background:var(--bg); border:1px solid var(--bd); color:var(--b); padding:8px 12px; border-radius:999px}
-        .subtle{opacity:.75}
-        ul.reset{list-style:none; margin:0; padding:0}
-        .right{text-align:right}
+        .tabs{display:flex; gap:8px; margin:10px 0}
+        .tab{padding:8px 12px; border:1px solid var(--bd); border-radius:999px; cursor:pointer; background:#fff}
+        .tab.active{background:var(--b); color:#fff}
+        .ok{color:var(--ok)} .err{color:var(--err)}
+        .hint{font-size:12px; color:var(--g)}
     </style>
 </head>
-
 <body>
 <div class="container">
     <header>
@@ -57,251 +47,425 @@
             <h1>Stock App</h1>
             <div class="muted">Login sonrası Basic Auth ile API çağrıları.</div>
             <div class="muted" style="margin-top:6px">User: <strong id="userEmail">-</strong></div>
+            <div class="tabs">
+                <div id="tabUser"   class="tab active">User</div>
+                <div id="tabAdmin"  class="tab" style="display:none">Admin</div>
+            </div>
         </div>
         <div>
             <button id="btnLogout" class="btn outline">Logout</button>
         </div>
     </header>
 
-    <div class="row">
-        <div class="col">
-            <div class="card">
-                <h3>Balance</h3>
-                <div class="toolbar">
-                    <button id="btnMyBalance" class="btn small">My Balance</button>
-                    <div class="pill"><span>₺</span><strong id="balanceVal">0.00</strong></div>
+    <section id="userView">
+        <div class="row">
+            <!-- Balance -->
+            <div class="col">
+                <div class="card">
+                    <h3>Balance</h3>
+                    <div class="toolbar">
+                        <button id="btnMyBalance" class="btn small">My Balance</button>
+                        <div class="pill"><span>₺</span><strong id="balanceVal">0.00</strong></div>
+                    </div>
+                    <div class="field">
+                        <label for="topupCode">Top-up Code</label>
+                        <input id="topupCode" class="input" placeholder="KOD-ABC-001" value="KOD-ABC-001">
+                    </div>
+                    <button id="btnUseCode" class="btn small">Use Code</button>
                 </div>
-                <div class="field">
-                    <label for="topupCode">Top-up Code</label>
-                    <input id="topupCode" class="input" placeholder="KOD-ABC-001" value="KOD-ABC-001">
+            </div>
+
+            <div class="col">
+                <div class="card">
+                    <h3>Trading</h3>
+                    <div class="field">
+                        <label for="tradeSymbol">Symbol</label>
+                        <input id="tradeSymbol" class="input" value="ASELS" placeholder="ASELS">
+                    </div>
+                    <div class="field">
+                        <label for="tradeQty">Quantity</label>
+                        <input id="tradeQty" class="input" type="number" value="1" min="1" step="1">
+                    </div>
+                    <div style="display:flex; gap:8px">
+                        <button id="btnBuy"  class="btn small">Buy</button>
+                        <button id="btnSell" class="btn small">Sell</button>
+                    </div>
+                    <div class="muted" style="margin-top:10px">Last trade: <span id="lastTrade">-</span></div>
                 </div>
-                <button id="btnUseCode" class="btn small">Use Code</button>
+            </div>
+
+            <div class="col">
+                <div class="card">
+                    <h3>Tools</h3>
+                    <a class="btn small" href="/h2-console" target="_blank">H2 Console</a>
+
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px">
+                        <h4 style="margin:0">DB Stocks <span id="stockCount" class="muted">(0)</span></h4>
+                        <button id="btnMiniMore" class="btn small">More</button>
+                    </div>
+                    <ul id="dbSnapshot" style="list-style:none; padding-left:0; margin:10px 0 0; max-height:220px; overflow:auto"></ul>
+                </div>
             </div>
         </div>
 
-        <div class="col">
-            <div class="card">
-                <h3>Trading</h3>
-                <div class="field">
-                    <label for="tradeSymbol">Symbol</label>
-                    <input id="tradeSymbol" class="input" value="ASELS" placeholder="ASELS">
+        <div class="card" style="margin-top:22px">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px">
+                <h3 style="margin:0">Stocks</h3>
+                <button id="btnReload" class="btn small">Reload</button>
+            </div>
+            <table>
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Symbol</th>
+                    <th>Name</th>
+                    <th>Last Price</th>
+                    <th>Available</th>
+                    <th>Status</th>
+                </tr>
+                </thead>
+                <tbody id="stocksBody"></tbody>
+            </table>
+        </div>
+
+        <div class="row" style="margin-top:22px">
+            <div class="col">
+                <div class="card">
+                    <h3>My Portfolio</h3>
+                    <table>
+                        <thead><tr><th>Symbol</th><th>Qty</th><th>Avg Price</th></tr></thead>
+                        <tbody id="portfolioBody"><tr><td colspan="3" class="muted">Empty</td></tr></tbody>
+                    </table>
                 </div>
-                <div class="field">
-                    <label for="tradeQty">Quantity</label>
-                    <input id="tradeQty" class="input" type="number" value="1" min="1" step="1">
+            </div>
+            <div class="col">
+                <div class="card">
+                    <h3>My Trades</h3>
+                    <table>
+                        <thead>
+                        <tr><th>Time</th><th>Type</th><th>Symbol</th><th>Qty</th><th>Price</th><th>Commission</th></tr>
+                        </thead>
+                        <tbody id="tradesBody"><tr><td colspan="6" class="muted">No trades</td></tr></tbody>
+                    </table>
                 </div>
-                <div style="display:flex; gap:8px">
-                    <button id="btnBuy" class="btn small">Buy</button>
-                    <button id="btnSell" class="btn small">Sell</button>
-                </div>
-                <div class="muted" style="margin-top:10px">Last trade: <span id="lastTrade">-</span></div>
             </div>
         </div>
+    </section>
 
-        <div class="col">
-            <div class="card">
-                <h3>Tools</h3>
-                <a class="btn small" href="/h2-console" target="_blank">H2 Console</a>
+    <section id="adminView" style="display:none">
+        <div class="row">
+            <div class="col">
+                <div class="card">
+                    <h3>Users</h3>
 
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:14px">
-                    <h4 style="margin:0">DB Stocks <span id="stockCount" class="subtle">(0)</span></h4>
-                    <button id="btnMiniMore" class="btn small">More</button>
+                    <div class="field"><label>Email</label>
+                        <input id="ad_new_email" class="input" type="email" placeholder="user@mail.com" />
+                    </div>
+                    <div class="field"><label>Password</label>
+                        <input id="ad_new_pwd" class="input" type="password" />
+                    </div>
+                    <div class="field"><label>Role</label>
+                        <select id="ad_new_role" class="input">
+                            <option>USER</option>
+                            <option>ADMIN</option>
+                        </select>
+                    </div>
+                    <button id="ad_btn_createUser" class="btn small">Create User</button>
+
+                    <hr style="margin:16px 0; border:none; border-top:1px solid var(--bd)" />
+
+                    <div class="field"><label>Update role — User ID</label>
+                        <input id="ad_upd_userId" class="input" type="number" placeholder="ID" />
+                    </div>
+                    <div class="field"><label>New Role</label>
+                        <select id="ad_upd_role" class="input">
+                            <option>USER</option>
+                            <option>ADMIN</option>
+                        </select>
+                    </div>
+                    <button id="ad_btn_updateRole" class="btn small">Update Role</button>
+
+                    <hr style="margin:16px 0; border:none; border-top:1px solid var(--bd)" />
+
+                    <div class="field"><label>Set balance — User ID</label>
+                        <input id="ad_bal_userId" class="input" type="number" placeholder="ID" />
+                    </div>
+                    <div class="field"><label>Balance (₺)</label>
+                        <input id="ad_bal_amount" class="input" type="number" step="0.01" placeholder="100.00" />
+                    </div>
+                    <button id="ad_btn_setBalance" class="btn small">Set Balance</button>
+
+                    <div id="ad_user_msg" class="ok" style="margin-top:8px"></div>
+                    <div id="ad_user_err" class="err" style="margin-top:6px"></div>
                 </div>
+            </div>
 
-                <ul id="dbSnapshot" class="reset" style="margin-top:8px; max-height:220px; overflow:auto"></ul>
+            <div class="col">
+                <div class="card">
+                    <h3>Top-up Cards & Commission</h3>
+
+                    <div class="field"><label>Card Code</label>
+                        <input id="ad_card_code" class="input" placeholder="KOD-XYZ-001" />
+                    </div>
+                    <div class="field"><label>Amount (₺)</label>
+                        <input id="ad_card_amount" class="input" type="number" step="0.01" placeholder="250.00" />
+                    </div>
+                    <button id="ad_btn_cardCreate" class="btn small">Create Card</button>
+
+                    <hr style="margin:16px 0; border:none; border-top:1px solid var(--bd)" />
+
+                    <div class="field"><label>Commission (%)</label>
+                        <input id="ad_commission" class="input" type="number" step="0.01" placeholder="5.00" />
+                    </div>
+                    <div class="hint">Varsayılan %5. Komisyon sistem bakiyesine yazılır.</div>
+                    <button id="ad_btn_setCommission" class="btn small">Set Commission</button>
+
+                    <div id="ad_misc_msg" class="ok" style="margin-top:8px"></div>
+                    <div id="ad_misc_err" class="err" style="margin-top:6px"></div>
+                </div>
+            </div>
+
+            <div class="col">
+                <div class="card">
+                    <h3>Stocks</h3>
+
+                    <div class="field"><label>Symbol</label><input id="ad_stk_symbol" class="input" placeholder="ASELS" /></div>
+                    <div class="field"><label>Name</label><input id="ad_stk_name" class="input" placeholder="Aselsan" /></div>
+                    <div class="field"><label>Start Price</label><input id="ad_stk_price" class="input" type="number" step="0.01" placeholder="100.00" /></div>
+                    <div class="field"><label>Active?</label>
+                        <select id="ad_stk_active" class="input"><option value="true">true</option><option value="false">false</option></select>
+                    </div>
+                    <button id="ad_btn_addStock" class="btn small">Add Stock</button>
+
+                    <hr style="margin:16px 0; border:none; border-top:1px solid var(--bd)" />
+
+                    <div class="hint" style="margin-bottom:8px">Aşağıda mevcut hisseler: (Aktif/Pasif için toggle’a bas)</div>
+                    <table>
+                        <thead><tr><th>ID</th><th>Symbol</th><th>Name</th><th>Price</th><th>Active</th><th>Action</th></tr></thead>
+                        <tbody id="ad_stocksBody"></tbody>
+                    </table>
+
+                    <div id="ad_stock_msg" class="ok"  style="margin-top:8px"></div>
+                    <div id="ad_stock_err" class="err" style="margin-top:6px"></div>
+                </div>
             </div>
         </div>
-    </div>
-
-    <div class="card" style="margin-top:22px">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin:6px 0 12px">
-            <h3 style="margin:0">Stocks</h3>
-            <button id="btnReload" class="btn small">Reload</button>
-        </div>
-
-        <table id="stocksTable">
-            <thead>
-            <tr>
-                <th>Symbol</th>
-                <th>Name</th>
-                <th class="right">Last Price</th>
-                <th class="right">Available</th>
-                <th>Status</th>
-            </tr>
-            </thead>
-            <tbody id="stocksBody"></tbody>
-        </table>
-    </div>
-
-    <div class="row" style="margin-top:22px">
-        <div class="col">
-            <div class="card">
-                <h3>My Portfolio</h3>
-                <table>
-                    <thead><tr><th>Symbol</th><th class="right">Qty</th><th class="right">Avg Price</th></tr></thead>
-                    <tbody id="portfolioBody"><tr><td colspan="3" class="muted">Empty</td></tr></tbody>
-                </table>
-            </div>
-        </div>
-
-        <div class="col">
-            <div class="card">
-                <h3>My Trades</h3>
-                <table>
-                    <thead>
-                    <tr>
-                        <th>Time</th><th>Type</th><th>Symbol</th>
-                        <th class="right">Qty</th><th class="right">Price</th><th class="right">Commission</th>
-                    </tr>
-                    </thead>
-                    <tbody id="tradesBody"><tr><td colspan="6" class="muted">No trades</td></tr></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+    </section>
 </div>
 
 <script>
+    const API_BASE = '';
     const LS_KEY   = 'sm_auth';
     const LS_EMAIL = 'sm_email';
 
+    function hdr(extra = {}) {
+        const auth = localStorage.getItem('sm_auth');
+        if (!auth) { window.location.replace('/login'); throw new Error('No auth'); }
+        return Object.assign({
+            'Authorization': 'Basic ' + auth,
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }, extra);
+    }
+    const fmt2 = v => (Number.isFinite(+v) ? (+v).toFixed(2) : v);
     const userEmailEl = document.getElementById('userEmail');
     userEmailEl.textContent = localStorage.getItem(LS_EMAIL) || '-';
 
-    function authHeader() {
-        const token = localStorage.getItem(LS_KEY);
-        if (!token) {
-            window.location.replace('/login');
-            throw new Error('No auth in localStorage');
-        }
-        return 'Basic ' + token;
-    }
-
-    async function http(path, { method = 'GET', body = null } = {}) {
-        const opts = {
-            method,
-            headers: {
-                'Authorization': authHeader(),
-                'Accept': 'application/json'
-            }
-        };
-        if (body != null) {
-            opts.headers['Content-Type'] = 'application/json';
-            opts.body = JSON.stringify(body);
-        }
-
-        const res = await fetch(path, opts);
-
-        if (res.status === 401 || res.status === 403) {
-            localStorage.removeItem(LS_KEY);
-            localStorage.removeItem(LS_EMAIL);
-            window.location.replace('/login');
-            return Promise.reject(new Error(res.status));
-        }
-
-        if (!res.ok) {
-            const text = await res.text().catch(()=>res.statusText);
-            throw new Error(`HTTP ${res.status}: ${text}`);
-        }
-
-        if (res.status === 204) return null;
-
-        return res.json();
-    }
-
-    const fmt2 = v => Number(v ?? 0).toFixed(2);
-
-    document.getElementById('btnLogout').addEventListener('click', () => {
+    document.getElementById('btnLogout').onclick = () => {
         localStorage.removeItem(LS_KEY);
         localStorage.removeItem(LS_EMAIL);
-        window.location.replace('/login');
-    });
+        location.replace('/login');
+    };
 
-    async function loadMyBalance() {
-        try {
-            const data = await http('/api/balance/me');
-            const val = (data && typeof data === 'object' && 'balance' in data) ? data.balance : data;
-            document.getElementById('balanceVal').textContent = fmt2(val);
-        } catch (e) {
-            console.error(e);
-            alert('Balance load failed');
-        }
+    const tabUser  = document.getElementById('tabUser');
+    const tabAdmin = document.getElementById('tabAdmin');
+    const userView = document.getElementById('userView');
+    const adminView= document.getElementById('adminView');
+
+    function showUser(){ tabUser.classList.add('active'); tabAdmin.classList.remove('active'); userView.style.display=''; adminView.style.display='none'; }
+    function showAdmin(){ tabAdmin.classList.add('active'); tabUser.classList.remove('active'); adminView.style.display=''; userView.style.display='none'; }
+    tabUser.onclick = showUser;
+    tabAdmin.onclick= showAdmin;
+
+    let IS_ADMIN = false;
+    async function detectRole(){
+        try{
+            const me = await (await fetch('/api/auth/me', {headers: hdr()})).json();
+            IS_ADMIN = (me.role === 'ADMIN' || me.role?.name === 'ADMIN');
+            if(IS_ADMIN){ tabAdmin.style.display='inline-block'; } else { tabAdmin.style.display='none'; showUser(); }
+        }catch(e){ }
     }
-    document.getElementById('btnMyBalance').addEventListener('click', loadMyBalance);
 
-    async function useTopupCode() {
+    async function loadMyBalance(){
+        try{
+            const r = await fetch('/api/balance/me', {headers: hdr()});
+            if(!r.ok) throw new Error(r.status);
+            const data = await r.json();
+            const val = (data && typeof data==='object' && 'balance' in data) ? data.balance : data;
+            document.getElementById('balanceVal').textContent = fmt2(val);
+        }catch(e){ console.error(e); alert('Balance load failed'); }
+    }
+    document.getElementById('btnMyBalance').onclick = loadMyBalance;
+
+    document.getElementById('btnUseCode').onclick = async () => {
         const code = document.getElementById('topupCode').value.trim();
-        if (!code) return alert('Enter top-up code');
-        try {
-            await http('/api/balance/topup', { method: 'POST', body: { code } });
+        if(!code) return alert('Enter top-up code');
+        try{
+            const r = await fetch('/api/balance/topup', {method:'POST', headers: hdr(), body: JSON.stringify({code})});
+            if(!r.ok) throw new Error(await r.text());
             await loadMyBalance();
             alert('Balance updated');
-        } catch (e) {
-            console.error(e);
-            alert('Top-up failed');
-        }
-    }
-    document.getElementById('btnUseCode').addEventListener('click', useTopupCode);
+        }catch(e){ console.error(e); alert('Top-up failed'); }
+    };
 
-    async function loadStocks() {
-        try {
-            const data = await http('/api/stocks');
-
-            const rows = data.map(s => `
+    let STOCKS = [];
+    async function loadStocks(){
+        try{
+            const r = await fetch('/api/stocks', {headers: hdr()});
+            if(!r.ok) throw new Error(r.status);
+            const data = await r.json();
+            STOCKS = data || [];
+            const tb = document.getElementById('stocksBody');
+            tb.innerHTML = STOCKS.map(s => `
         <tr>
+          <td>${s.id ?? ''}</td>
           <td>${s.symbol}</td>
           <td>${s.name ?? ''}</td>
-          <td class="right">${fmt2(s.lastPrice)}</td>
-          <td class="right">${s.availableQuantity}</td>
+          <td>${fmt2(s.lastPrice)}</td>
+          <td>${s.availableQuantity}</td>
           <td>${s.active ? 'ACTIVE' : 'PASSIVE'}</td>
-        </tr>
-      `).join('');
-            document.getElementById('stocksBody').innerHTML = rows;
-
-            document.getElementById('stockCount').textContent = `(${data.length})`;
-            const mini = data.slice(0, 10).map(s => `
-        <li style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bd)">
-          <span><strong>${s.symbol}</strong> <span class="subtle">${s.name ?? ''}</span></span>
+        </tr>`).join('');
+            document.getElementById('stockCount').textContent = `(${STOCKS.length})`;
+            document.getElementById('dbSnapshot').innerHTML = STOCKS.slice(0,10).map(s =>
+                `<li style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bd)">
+          <span><strong>${s.symbol}</strong> <span class="muted">${s.name ?? ''}</span></span>
           <span>${fmt2(s.lastPrice)}</span>
-        </li>
-      `).join('');
-            document.getElementById('dbSnapshot').innerHTML = mini;
-
-        } catch (e) {
-            console.error(e);
-            alert('Stocks cannot be loaded.');
-        }
+        </li>`).join('');
+            document.getElementById('btnMiniMore').onclick = () => document.querySelector('#userView table').scrollIntoView({behavior:'smooth'});
+            renderAdminStocks();
+        }catch(e){ console.error(e); alert('Stocks cannot be loaded.'); }
     }
-    document.getElementById('btnReload').addEventListener('click', loadStocks);
-    document.getElementById('btnMiniMore').addEventListener('click', () => {
-        const table = document.getElementById('stocksTable');
-        table.scrollIntoView({ behavior: 'smooth' });
-    });
+    document.getElementById('btnReload').onclick = loadStocks;
 
-    async function trade(type) {
+    async function trade(type){
         const symbol = document.getElementById('tradeSymbol').value.trim();
-        const quantity = parseInt(document.getElementById('tradeQty').value, 10) || 1;
-        if (!symbol) return alert('Enter symbol');
-
-        try {
-            const tx = await http(`/api/trade/${type}`, { method: 'POST', body: { symbol, quantity } });
-            document.getElementById('lastTrade').textContent =
-                `${(tx.type || type).toUpperCase()} ${tx.symbol || symbol} x${tx.quantity || quantity} @ ${fmt2(tx.price || tx.lastPrice || 0)}`;
-            await loadMyBalance();
-            await loadStocks();
-        } catch (e) {
-            console.error(e);
-            alert('Trade failed');
-        }
+        const quantity = parseInt(document.getElementById('tradeQty').value,10) || 1;
+        if(!symbol) return alert('Enter symbol');
+        try{
+            const r = await fetch(`/api/trade/${type}`, {method:'POST', headers: hdr(), body: JSON.stringify({symbol, quantity})});
+            if(!r.ok) throw new Error(await r.text());
+            const tx = await r.json();
+            document.getElementById('lastTrade').textContent = `${tx.type||type} ${tx.symbol||symbol} x${tx.quantity||quantity} @ ${fmt2(tx.price||tx.lastPrice||0)}`;
+            await loadMyBalance(); await loadStocks();
+        }catch(e){ console.error(e); alert('Trade failed'); }
     }
-    document.getElementById('btnBuy').addEventListener('click', () => trade('buy'));
-    document.getElementById('btnSell').addEventListener('click', () => trade('sell'));
+    document.getElementById('btnBuy').onclick  = () => trade('buy');
+    document.getElementById('btnSell').onclick = () => trade('sell');
+
+    function setMsg(where, msg, ok=true){
+        const okEl  = document.getElementById(where+'_msg');
+        const errEl = document.getElementById(where+'_err');
+        if(ok){ if(okEl) okEl.textContent = msg; if(errEl) errEl.textContent = ''; }
+        else  { if(errEl) errEl.textContent = msg; if(okEl) okEl.textContent = ''; }
+        setTimeout(()=>{ if(okEl) okEl.textContent=''; if(errEl) errEl.textContent=''; }, 3000);
+    }
+
+    document.getElementById('ad_btn_createUser').onclick = async () => {
+        try{
+            const email=document.getElementById('ad_new_email').value.trim();
+            const password=document.getElementById('ad_new_pwd').value;
+            const role=document.getElementById('ad_new_role').value;
+            const r = await fetch('/api/admin/users', {method:'POST', headers: hdr(), body: JSON.stringify({email,password,role})});
+            if(!r.ok) throw new Error(await r.text());
+            setMsg('ad_user','User created');
+        }catch(e){ setMsg('ad_user', e.message || 'Create failed', false); }
+    };
+
+    document.getElementById('ad_btn_updateRole').onclick = async () => {
+        try{
+            const id = +document.getElementById('ad_upd_userId').value;
+            const role = document.getElementById('ad_upd_role').value;
+            const r = await fetch(`/api/admin/users/${id}/role`, {method:'PATCH', headers: hdr(), body: JSON.stringify({role})});
+            if(!r.ok) throw new Error(await r.text());
+            setMsg('ad_user','Role updated');
+        }catch(e){ setMsg('ad_user', e.message || 'Update failed', false); }
+    };
+
+    document.getElementById('ad_btn_setBalance').onclick = async () => {
+        try{
+            const id = +document.getElementById('ad_bal_userId').value;
+            const balance = +document.getElementById('ad_bal_amount').value;
+            const r = await fetch(`/api/admin/users/${id}/balance`, {method:'PATCH', headers: hdr(), body: JSON.stringify({balance})});
+            if(!r.ok) throw new Error(await r.text());
+            setMsg('ad_user','Balance set');
+        }catch(e){ setMsg('ad_user', e.message || 'Balance set failed', false); }
+    };
+
+    document.getElementById('ad_btn_cardCreate').onclick = async () => {
+        try{
+            const code = document.getElementById('ad_card_code').value.trim();
+            const amount = +document.getElementById('ad_card_amount').value;
+            const r = await fetch('/api/admin/topup-cards', {method:'POST', headers: hdr(), body: JSON.stringify({code,amount})});
+            if(!r.ok) throw new Error(await r.text());
+            setMsg('ad_misc','Card created');
+        }catch(e){ setMsg('ad_misc', e.message || 'Card create failed', false); }
+    };
+
+    document.getElementById('ad_btn_setCommission').onclick = async () => {
+        try{
+            const commissionPercent = +document.getElementById('ad_commission').value;
+            const r = await fetch('/api/admin/settings/commission', {method:'PATCH', headers: hdr(), body: JSON.stringify({commissionPercent})});
+            if(!r.ok) throw new Error(await r.text());
+            setMsg('ad_misc','Commission updated');
+        }catch(e){ setMsg('ad_misc', e.message || 'Commission update failed', false); }
+    };
+
+    document.getElementById('ad_btn_addStock').onclick = async () => {
+        try{
+            const symbol = document.getElementById('ad_stk_symbol').value.trim();
+            const name   = document.getElementById('ad_stk_name').value.trim();
+            const price  = +document.getElementById('ad_stk_price').value;
+            const active = document.getElementById('ad_stk_active').value;
+            const qs = new URLSearchParams({symbol, name, price, active}).toString();
+            const r = await fetch(`/api/admin/stocks?${qs}`, {method:'POST', headers: hdr()});
+            if(!r.ok) throw new Error(await r.text());
+            setMsg('ad_stock','Stock added');
+            await loadStocks();
+        }catch(e){ setMsg('ad_stock', e.message || 'Add failed', false); }
+    };
+
+    function renderAdminStocks(){
+        const tb = document.getElementById('ad_stocksBody');
+        if(!tb) return;
+        tb.innerHTML = (STOCKS||[]).map(s => `
+      <tr>
+        <td>${s.id ?? ''}</td>
+        <td>${s.symbol}</td>
+        <td>${s.name ?? ''}</td>
+        <td>${fmt2(s.lastPrice)}</td>
+        <td>${s.active}</td>
+        <td>
+          <button class="btn small" data-id="${s.id}" data-next="${!s.active}">${s.active?'Deactivate':'Activate'}</button>
+        </td>
+      </tr>`).join('');
+        tb.querySelectorAll('button[data-id]').forEach(btn => {
+            btn.onclick = async () => {
+                const id = btn.getAttribute('data-id');
+                const next = btn.getAttribute('data-next');
+                try{
+                    const r = await fetch(`/api/admin/stocks/${id}/active?active=${next}`, {method:'PATCH', headers: hdr()});
+                    if(!r.ok) throw new Error(await r.text());
+                    setMsg('ad_stock','Updated');
+                    await loadStocks();
+                }catch(e){ setMsg('ad_stock', e.message || 'Toggle failed', false); }
+            };
+        });
+    }
 
     window.addEventListener('load', async () => {
-        try {
-            await loadStocks();
-            await loadMyBalance();
-        } catch (_) {}
+        await detectRole();
+        await loadStocks();
+        await loadMyBalance();
     });
 </script>
 </body>
