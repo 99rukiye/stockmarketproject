@@ -6,9 +6,20 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.Instant;
 
+@Table(
+        name = "stock_price_history",
+        uniqueConstraints = {
+
+                @UniqueConstraint(name = "uk_stock_instant", columnNames = {"stock_id", "observed_at"})
+        },
+        indexes = {
+                @Index(name = "idx_stock_time", columnList = "stock_id, observed_at DESC")
+        }
+)
 @Entity
 @Getter @Setter @NoArgsConstructor
 public class StockPriceHistory {
+
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
@@ -18,8 +29,9 @@ public class StockPriceHistory {
     @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal price;
 
-    @Column(nullable = false)
+    @Column(name = "observed_at", nullable = false)
     private Instant timestamp;
+
 
     public static StockPriceHistory of(Stock stock, BigDecimal price, Instant ts) {
         StockPriceHistory h = new StockPriceHistory();
