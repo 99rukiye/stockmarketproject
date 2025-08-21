@@ -135,7 +135,6 @@
     (function prefill(){
         const last = localStorage.getItem('sm_email');
         if (last) emailEl.value = last;
-        // Enter ile login
         [emailEl, passEl].forEach(el => el.addEventListener('keydown', e => {
             if (e.key === 'Enter') doLogin();
         }));
