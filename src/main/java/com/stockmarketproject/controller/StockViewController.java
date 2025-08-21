@@ -16,16 +16,14 @@ public class StockViewController {
 
     private final StockRepository stockRepository;
 
-
-    @GetMapping({"/", "/stocks"})
-    public String stocks(Model model) {
-        List<Stock> stocks = stockRepository.findAll().stream()
-                .filter(Stock::isActive)
-                .sorted(Comparator.comparing(Stock::getSymbol))
+    @GetMapping("/stocks")
+    public String stocksPage(Model model) {
+        List<Stock> list = stockRepository.findAll().stream()
+                .sorted(Comparator.comparing(Stock::getSymbol, String.CASE_INSENSITIVE_ORDER))
                 .toList();
 
-        model.addAttribute("stocks", stocks);
-        model.addAttribute("count", stocks.size());
+        model.addAttribute("stocks", list);
+        model.addAttribute("count", list.size());
         return "stocks";
     }
 }
