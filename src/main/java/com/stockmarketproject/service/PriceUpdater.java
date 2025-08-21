@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -26,15 +28,9 @@ public class PriceUpdater {
     private final StockRepository stockRepo;
     private final StockPriceHistoryRepository historyRepo;
 
-    /**
-     * Scraper'dan gelen son fiyatları DB'ye uygular.
-     * Fiyat değiştiyse STOCK.last_price güncellenir ve STOCK_PRICE_HISTORY'ye satır eklenir.
-     * @return güncellenen hisse sayısı
-     */
     @Transactional
     public int apply(List<ScrapedStock> latest) {
         if (latest == null || latest.isEmpty()) return 0;
-
 
         Map<String, ScrapedStock> bySymbol = latest.stream()
                 .filter(s -> s != null && s.symbol() != null && s.lastPrice() != null)
@@ -50,27 +46,29 @@ public class PriceUpdater {
         int updated = 0;
 
         for (Stock st : all) {
-            String sym = st.getSymbol() == null ? null : st.getSymbol().trim().toUpperCase();
+            String sym = (st.getSymbol() == null) ? null : st.getSymbol().trim().toUpperCase();
             if (sym == null) continue;
 
             ScrapedStock web = bySymbol.get(sym);
             if (web == null || web.lastPrice() == null) continue;
 
+            BigDecimal newPrice = web.lastPrice().setScale(2, RoundingMode.HALF_UP);
+            BigDecimal curPrice = st.getLastPrice() == null
+                    ? null
+                    : st.getLastPrice().setScale(2, RoundingMode.HALF_UP);
 
-            if (st.getLastPrice() == null || st.getLastPrice().compareTo(web.lastPrice()) != 0) {
-                st.setLastPrice(web.lastPrice());
+            if (curPrice == null || curPrice.compareTo(newPrice) != 0) {
+                st.setLastPrice(newPrice);
                 stockRepo.save(st);
 
                 StockPriceHistory h = new StockPriceHistory();
                 h.setStock(st);
-                h.setPrice(web.lastPrice());
+                h.setPrice(newPrice);
                 h.setTimestamp(now);
                 historyRepo.save(h);
-
                 updated++;
             }
         }
-
         log.debug("Price apply finished. updated={}", updated);
         return updated;
     }
