@@ -15,7 +15,7 @@ public class Stock {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, length = 32)
+    @Column(unique = true, nullable = false, length = 12)
     private String symbol;
 
     @Column(nullable = false, length = 128)
