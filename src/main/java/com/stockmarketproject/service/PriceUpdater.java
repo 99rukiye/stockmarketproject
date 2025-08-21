@@ -5,17 +5,18 @@ import com.stockmarketproject.entity.StockPriceHistory;
 import com.stockmarketproject.repository.StockPriceHistoryRepository;
 import com.stockmarketproject.repository.StockRepository;
 import com.stockmarketproject.scrape.ScrapedStock;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.function.Function;
+
+import static java.util.stream.Collectors.toMap;
 
 @Service
 @RequiredArgsConstructor
@@ -25,36 +26,52 @@ public class PriceUpdater {
     private final StockRepository stockRepo;
     private final StockPriceHistoryRepository historyRepo;
 
+    /**
+     * Scraper'dan gelen son fiyatları DB'ye uygular.
+     * Fiyat değiştiyse STOCK.last_price güncellenir ve STOCK_PRICE_HISTORY'ye satır eklenir.
+     * @return güncellenen hisse sayısı
+     */
     @Transactional
-    public int apply(List<ScrapedStock> scraped) {
-        if (scraped == null || scraped.isEmpty()) return 0;
+    public int apply(List<ScrapedStock> latest) {
+        if (latest == null || latest.isEmpty()) return 0;
 
-        Map<String, ScrapedStock> map =
-                scraped.stream().collect(Collectors.toMap(ScrapedStock::symbol, s -> s, (a, b) -> a));
 
-        List<Stock> stocks = stockRepo.findAll();
-        int updated = 0;
+        Map<String, ScrapedStock> bySymbol = latest.stream()
+                .filter(s -> s != null && s.symbol() != null && s.lastPrice() != null)
+                .collect(toMap(
+                        s -> s.symbol().trim().toUpperCase(),
+                        Function.identity(),
+                        (a, b) -> a,
+                        LinkedHashMap::new
+                ));
+
+        List<Stock> all = stockRepo.findAll();
         Instant now = Instant.now();
+        int updated = 0;
 
-        for (Stock st : stocks) {
-            ScrapedStock s = map.get(st.getSymbol());
-            if (s == null || s.price() == null) continue;
+        for (Stock st : all) {
+            String sym = st.getSymbol() == null ? null : st.getSymbol().trim().toUpperCase();
+            if (sym == null) continue;
 
-            BigDecimal newPrice = s.price().setScale(2, RoundingMode.HALF_UP);
-            if (st.getLastPrice() == null || st.getLastPrice().compareTo(newPrice) != 0) {
-                st.setLastPrice(newPrice);
+            ScrapedStock web = bySymbol.get(sym);
+            if (web == null || web.lastPrice() == null) continue;
+
+
+            if (st.getLastPrice() == null || st.getLastPrice().compareTo(web.lastPrice()) != 0) {
+                st.setLastPrice(web.lastPrice());
                 stockRepo.save(st);
 
                 StockPriceHistory h = new StockPriceHistory();
                 h.setStock(st);
-                h.setPrice(newPrice);
+                h.setPrice(web.lastPrice());
                 h.setTimestamp(now);
                 historyRepo.save(h);
 
                 updated++;
             }
         }
-        log.info("PriceUpdater: {} stock updated.", updated);
+
+        log.debug("Price apply finished. updated={}", updated);
         return updated;
     }
 }
