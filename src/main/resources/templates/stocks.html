@@ -1,13 +1,16 @@
 <!doctype html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Active Stocks</title>
     <style>
         body{font-family:system-ui,Arial,sans-serif;background:#f9fafb;margin:24px}
-        h1{margin:0 0 12px} .badge{background:#111827;color:#fff;border-radius:999px;padding:4px 10px}
+        h1{margin:0 0 12px}
+        .badge{background:#111827;color:#fff;border-radius:999px;padding:4px 10px}
         table{width:100%;border-collapse:collapse;background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden}
-        th,td{padding:10px;border-bottom:1px solid #e5e7eb;text-align:left} th{background:#f3f4f6}
+        th,td{padding:10px;border-bottom:1px solid #e5e7eb;text-align:left}
+        th{background:#f3f4f6}
     </style>
 </head>
 <body>
@@ -28,7 +31,7 @@
     <tr th:each="s : ${stocks}">
         <td th:text="${s.symbol}">ASELS</td>
         <td th:text="${s.name}">Aselsan</td>
-        <td th:text="${#numbers.formatDecimal(s.lastPrice,0,'NONE',2,'POINT')}">100.00</td>
+        <td th:text="${s.lastPrice != null ? #numbers.formatDecimal(s.lastPrice,0,'NONE',2,'POINT') : '-'}">100.00</td>
         <td th:text="${s.availableQuantity}">10000</td>
         <td th:text="${s.active} ? 'ACTIVE' : 'PASSIVE'">ACTIVE</td>
     </tr>
