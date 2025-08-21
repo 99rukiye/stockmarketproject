@@ -19,6 +19,7 @@ public class MarketPriceScheduler {
     private final BigparaScraperService scraper;
     private final PriceUpdater priceUpdater;
 
+
     @Scheduled(fixedDelayString = "${app.prices.refresh-ms:60000}")
     public void refreshPrices() {
         try {
