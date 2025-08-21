@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -25,43 +26,48 @@ public class MarketImportService {
     private final StockPriceHistoryRepository historyRepo;
 
     @Transactional
-    public void importAll() {
-        try {
-            List<ScrapedStock> all = scraper.fetchAll();
-            int created = 0, updated = 0;
-
-            for (ScrapedStock s : all) {
-                Stock st = stockRepo.findBySymbol(s.symbol()).orElseGet(Stock::new);
-                boolean isNew = (st.getId() == null);
-
-                st.setSymbol(s.symbol());
-                st.setName(s.name());
-                st.setActive(true);
-                if (st.getAvailableQuantity() == null || st.getAvailableQuantity() == 0) {
-                    st.setAvailableQuantity(10_000L);
-                }
-
-                BigDecimal old = st.getLastPrice();
-                BigDecimal now = (s.lastPrice() != null ? s.lastPrice() : BigDecimal.ZERO);
-                st.setLastPrice(now);
-
-                stockRepo.save(st);
-
-
-                if (isNew || old == null || old.compareTo(now) != 0) {
-                    StockPriceHistory h = new StockPriceHistory();
-                    h.setStock(st);
-                    h.setPrice(now);
-                    h.setTimestamp(Instant.now());
-                    historyRepo.save(h);
-                }
-
-                if (isNew) created++; else updated++;
-            }
-
-            log.info("Import finished. created={}, touched={}", created, updated);
-        } catch (Exception ex) {
-            log.error("Import failed", ex);
+    public void seedIfEmpty() {
+        if (stockRepo.count() > 0) {
+            log.info("Stocks already present, seed skipped.");
+            return;
         }
+        importAll();
+    }
+
+    @Transactional
+    public void importAll() {
+        List<ScrapedStock> all;
+        try {
+            all = scraper.fetchAll();
+        } catch (IOException e) {
+            log.error("ImportAll: Bigpara'dan veri alınamadı: {}", e.toString(), e);
+            return;
+        }
+
+        int merged = 0;
+        for (ScrapedStock s : all) {
+            if (s == null || s.symbol() == null) continue;
+
+            Stock st = stockRepo.findBySymbol(s.symbol()).orElseGet(Stock::new);
+            boolean isNew = (st.getId() == null);
+
+            st.setSymbol(s.symbol());
+            st.setName(s.name() != null ? s.name() : s.symbol());
+            st.setActive(true);
+            if (st.getAvailableQuantity() == null) st.setAvailableQuantity(10_000L);
+            if (s.lastPrice() != null) st.setLastPrice(s.lastPrice());
+
+            Stock saved = stockRepo.save(st);
+
+            if (isNew) {
+                StockPriceHistory h = new StockPriceHistory();
+                h.setStock(saved);
+                h.setPrice(saved.getLastPrice() != null ? saved.getLastPrice() : BigDecimal.ZERO);
+                h.setTimestamp(Instant.now());
+                historyRepo.save(h);
+            }
+            merged++;
+        }
+        log.info("ImportAll done. saved/merged={}", merged);
     }
 }
