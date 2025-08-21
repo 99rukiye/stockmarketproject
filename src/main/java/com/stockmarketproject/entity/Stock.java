@@ -1,7 +1,9 @@
 package com.stockmarketproject.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 
@@ -24,11 +26,9 @@ public class Stock {
     @Column(nullable = false)
     private boolean active = true;
 
-
     @Column(nullable = false)
-    private Long availableQuantity = 0L;
-
+    private Long availableQuantity = 10_000L;
 
     @Column(nullable = false, precision = 19, scale = 2)
-    private BigDecimal lastPrice = BigDecimal.ONE;
+    private BigDecimal lastPrice = BigDecimal.ZERO;
 }
