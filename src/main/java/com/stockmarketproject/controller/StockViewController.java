@@ -26,6 +26,6 @@ public class StockViewController {
 
         model.addAttribute("stocks", stocks);
         model.addAttribute("count", stocks.size());
-        return "stocks"; // templates/stocks.html
+        return "stocks";
     }
 }
