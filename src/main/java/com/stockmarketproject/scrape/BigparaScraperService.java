@@ -1,112 +1,116 @@
 package com.stockmarketproject.scrape;
 
-import jakarta.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
+import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
 import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.ArrayList;
-import java.util.List;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.*;
 
 @Service
 @Slf4j
 public class BigparaScraperService {
 
-    private static final String URL = "https://bigpara.hurriyet.com.tr/borsa/canli-borsa/";
-    private static BigDecimal round2(BigDecimal bd) { return bd.setScale(2, RoundingMode.HALF_UP); }
+    @Value("${app.scrape.url:https://bigpara.hurriyet.com.tr/borsa/canli-borsa/}")
+    private String baseUrl;
 
-    public List<ScrapedStock> fetchAll() {
-        try {
-            Document doc = Jsoup.connect(URL)
-                    .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                            + "(KHTML, like Gecko) Chrome/123.0 Safari/537.36")
-                    .timeout(15_000)
-                    .get();
+    @Value("${app.scrape.userAgent:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36}")
+    private String userAgent;
 
-            List<ScrapedStock> out = parseByTable(doc, "#liveStocksTable table");
-            if (!out.isEmpty()) return out;
+    @Value("${app.scrape.timeoutMs:15000}")
+    private int timeoutMs;
 
-            out = parseByTable(doc, "table");
-            if (!out.isEmpty()) return out;
-
-            log.warn("BigparaScraper: No rows captured from {}", URL);
-            return List.of();
-
-        } catch (Exception e) {
-            log.warn("BigparaScraper: fetch error: {}", e.toString());
-            return List.of();
-        }
+    private Connection conn(String url) {
+        return Jsoup.connect(url)
+                .userAgent(userAgent)
+                .referrer("https://www.google.com/")
+                .timeout(timeoutMs)
+                .ignoreContentType(true)
+                .followRedirects(true);
     }
 
-    private List<ScrapedStock> parseByTable(Document doc, String tableCss) {
-        List<ScrapedStock> list = new ArrayList<>();
-        Element table = doc.selectFirst(tableCss);
-        if (table == null) return list;
+    public List<ScrapedStock> fetchAll() throws Exception {
+        Map<String, ScrapedStock> bag = new LinkedHashMap<>();
 
-        int priceIdx = findPriceColumnIndex(table.select("thead th"));
-        int symbolIdx = findSymbolColumnIndex(table.select("thead th"));
-
-        Elements rows = table.select("tbody tr");
-        for (Element tr : rows) {
-            Elements tds = tr.select("td");
-            if (tds.isEmpty()) continue;
-
-            String symbol = readSymbol(tds, symbolIdx);
-            String name   = readName(tds, symbolIdx);
-            BigDecimal price = readPrice(tds, priceIdx);
-
-            if (symbol != null && price != null) {
-                list.add(new ScrapedStock(symbol, name, round2(price)));
+        crawlPage(baseUrl, bag);
+        if (bag.size() < 30) {
+            String letters = "ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZQWX0123456789";
+            for (char ch : letters.toCharArray()) {
+                String url = baseUrl;
+                String[] qs = {"firstLetter", "letters", "harf"};
+                for (String q : qs) {
+                    String u = url + (url.contains("?") ? "&" : "?") + q + "=" +
+                            URLEncoder.encode(String.valueOf(ch), StandardCharsets.UTF_8);
+                    crawlPage(u, bag);
+                }
+                try { Thread.sleep(60); } catch (InterruptedException ignored) {}
             }
         }
-        return list;
+
+        log.info("Bigpara: collected {} unique stocks.", bag.size());
+        return new ArrayList<>(bag.values());
     }
 
-    private static int findPriceColumnIndex(Elements ths) {
-        for (int i = 0; i < ths.size(); i++) {
-            String t = ths.get(i).text().toLowerCase();
-            if (t.contains("son") || t.contains("fiyat")) return i;
+    private void crawlPage(String url, Map<String, ScrapedStock> sink) {
+        try {
+            Document doc = conn(url).get();
+            for (Element table : doc.select("table")) {
+                List<String> headers = new ArrayList<>();
+                for (Element th : table.select("thead th")) {
+                    headers.add(th.text().trim().toLowerCase(Locale.ROOT));
+                }
+                if (headers.isEmpty()) continue;
+
+                int idxSymbol = guessIndex(headers, List.of("sembol", "kod", "hisse", "hisse kodu", "hisse adı", "hisse adı / kodu"));
+                int idxName   = guessIndex(headers, List.of("ad", "şirket", "hisse adı", "ad/ünvan"));
+                int idxLast   = guessIndex(headers, List.of("son", "fiyat", "kapanış", "son fiyat"));
+
+                if (idxSymbol < 0 || idxLast < 0) continue;
+
+                for (Element tr : table.select("tbody tr")) {
+                    Elements tds = tr.select("td");
+                    if (tds.size() <= Math.max(idxSymbol, idxLast)) continue;
+
+                    String symbol = textOf(tds, idxSymbol).toUpperCase(Locale.ROOT);
+                    String name   = idxName >= 0 ? textOf(tds, idxName) : "";
+                    String priceS = textOf(tds, idxLast).replace(",", ".")
+                            .replaceAll("[^0-9.]", "");
+
+                    if (symbol.isBlank() || priceS.isBlank()) continue;
+
+                    try {
+                        BigDecimal price = new BigDecimal(priceS);
+                        sink.put(symbol, new ScrapedStock(symbol, name, price));
+                    } catch (NumberFormatException ignore) {  }
+                }
+            }
+        } catch (Exception ex) {
+            log.debug("Bigpara crawl failed {} -> {}", url, ex.toString());
         }
-        return Math.max(1, Math.min(2, ths.size()-1));
     }
-    private static int findSymbolColumnIndex(Elements ths) {
-        for (int i = 0; i < ths.size(); i++) {
-            String t = ths.get(i).text().toLowerCase();
-            if (t.contains("sembol") || t.contains("kod")) return i;
+
+    private static String textOf(Elements tds, int index) {
+        if (index < 0 || index >= tds.size()) return "";
+        Element td = tds.get(index);
+        Element link = td.selectFirst("a");
+        return (link != null ? link.text() : td.text()).trim();
+    }
+
+    private static int guessIndex(List<String> headers, List<String> candidates) {
+        for (int i = 0; i < headers.size(); i++) {
+            String h = headers.get(i);
+            for (String c : candidates) {
+                if (h.contains(c)) return i;
+            }
         }
-        return 0;
-    }
-
-    @Nullable
-    private static String readSymbol(Elements tds, int symbolIdx) {
-        String txt = safeTd(tds, symbolIdx);
-        if (txt == null) return null;
-        txt = txt.trim().replaceAll("[^A-ZÇĞİÖŞÜ0-9]", "");
-        if (txt.isBlank()) return null;
-        return txt;
-    }
-
-    private static String readName(Elements tds, int symbolIdx) {
-        String name = safeTd(tds, Math.min(symbolIdx + 1, tds.size()-1));
-        return name == null ? "" : name.trim();
-    }
-
-    @Nullable
-    private static BigDecimal readPrice(Elements tds, int priceIdx) {
-        String raw = safeTd(tds, priceIdx);
-        if (raw == null) return null;
-        raw = raw.replace(".", "").replace(",", ".").replaceAll("[^0-9.\\-]", "");
-        if (raw.isBlank()) return null;
-        try { return new BigDecimal(raw); } catch (NumberFormatException e) { return null; }
-    }
-
-    @Nullable
-    private static String safeTd(Elements tds, int idx) {
-        if (idx < 0 || idx >= tds.size()) return null;
-        return tds.get(idx).text();
+        return -1;
     }
 }
