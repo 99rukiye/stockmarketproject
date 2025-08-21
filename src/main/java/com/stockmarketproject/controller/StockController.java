@@ -5,7 +5,9 @@ import com.stockmarketproject.repository.StockRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Map;
@@ -19,8 +21,11 @@ public class StockController {
 
     @GetMapping
     public ResponseEntity<List<StockDto>> all() {
-        var list = stockRepository.findAll(Sort.by(Sort.Direction.ASC, "symbol"))
-                .stream().map(StockDto::from).toList();
+        List<StockDto> list = stockRepository
+                .findAll(Sort.by(Sort.Direction.ASC, "symbol"))
+                .stream()
+                .map(StockDto::from)
+                .toList();
         return ResponseEntity.ok(list);
     }
 
